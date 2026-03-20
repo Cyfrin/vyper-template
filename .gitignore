@@ -1,0 +1,11 @@
+# Moccasin / titanoboa
+.moccasin/
+__pycache__/
+*.pyc
+out/
+
+# Dotenv
+.env
+
+# macOS
+.DS_Store
