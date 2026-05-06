@@ -10,8 +10,7 @@ The attack flow:
   6. Split the haul per Safe Harbor terms and walk away clean
 
 Prerequisites:
-    TOKEN_ADDRESS    set in .env after running: just setup
-    VAULT_ADDRESS    set in .env after running: just setup
+    MockToken + VulnerableVault deployed via: just setup
     RECOVERY_ADDRESS set in .env (your wallet address)
 
 Usage:
@@ -23,9 +22,10 @@ import os
 
 import boa
 import vyper
+from moccasin.config import get_active_network
 
-from src import Attacker
-from script.verify_contract import verify_contract
+import battlechain as bc
+from src import Attacker, VulnerableVault
 
 SEED_AMOUNT = 100 * 10**18   # 100 tokens
 BOUNTY_BPS  = 1_000          # 10%
@@ -33,34 +33,39 @@ VYPER_VERSION = vyper.__version__
 
 
 def moccasin_main() -> None:
-    token_address    = os.environ.get("TOKEN_ADDRESS")
-    vault_address    = os.environ.get("VAULT_ADDRESS")
-    recovery_address = os.environ.get("RECOVERY_ADDRESS")
+    active_network = get_active_network()
+    skip_verify = active_network.is_local_or_forked_network()
 
-    if not token_address:
-        raise ValueError("TOKEN_ADDRESS not set in .env")
-    if not vault_address:
-        raise ValueError("VAULT_ADDRESS not set in .env")
+    token = active_network.get_latest_contract_unchecked("MockToken")
+    if token is None:
+        raise RuntimeError(
+            "MockToken not found in deployments.db — run `just setup` first."
+        )
+    vault = bc.get_tracked_contract(VulnerableVault)
+    if vault is None:
+        raise RuntimeError(
+            "VulnerableVault address not tracked — run `just setup` first."
+        )
+
+    recovery_address = os.environ.get("RECOVERY_ADDRESS")
     if not recovery_address:
         raise ValueError("RECOVERY_ADDRESS not set in .env")
 
-    # Read vault balance before attack
-    erc20_abi = '[{"name":"balanceOf","type":"function","stateMutability":"view","inputs":[{"name":"account","type":"address"}],"outputs":[{"name":"","type":"uint256"}]}]'
-    token = boa.loads_abi(erc20_abi, name="ERC20").at(token_address)
-    vault_before = token.balanceOf(vault_address)
+    vault_before = token.balanceOf(vault.address)
     print(f"Vault balance before: {vault_before / 10**18:.1f} tokens")
 
     # Deploy Attacker
     print("Deploying attacker...")
-    attacker = Attacker.deploy(vault_address, token_address, recovery_address, BOUNTY_BPS)
+    attacker = Attacker.deploy(vault.address, token.address, recovery_address, BOUNTY_BPS)
     print(f"Attacker deployed: {attacker.address}")
-    verify_contract(attacker.address, "src/Attacker.vy:Attacker", VYPER_VERSION)
+    if not skip_verify:
+        bc.verify_contract(attacker.address, "src/Attacker.vy:Attacker", VYPER_VERSION)
 
     # Execute the attack
     attacker.attack(SEED_AMOUNT)
 
     # Tally
-    vault_after = token.balanceOf(vault_address)
+    vault_after = token.balanceOf(vault.address)
     bounty      = token.balanceOf(boa.env.eoa)
     returned    = token.balanceOf(recovery_address)
 

@@ -39,7 +39,7 @@ def __init__(token: address):
 def deposit(amount: uint256):
     extcall IERC20(TOKEN).transferFrom(msg.sender, self, amount)
     self.balances[msg.sender] += amount
-    log Deposited(msg.sender, amount)
+    log Deposited(user=msg.sender, amount=amount)
 
 
 @external
@@ -53,7 +53,7 @@ def withdrawAll():
     # ❌ Effect happens here — re-entrant calls already passed the check above
     self.balances[msg.sender] = 0
 
-    log Withdrawn(msg.sender, amount)
+    log Withdrawn(user=msg.sender, amount=amount)
 
 
 @external

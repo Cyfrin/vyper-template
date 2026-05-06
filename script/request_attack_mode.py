@@ -2,7 +2,7 @@
 Step 3 (Protocol): Submit the attack mode request for DAO review.
 
 Prerequisites:
-    AGREEMENT_ADDRESS set in .env after running: just create-agreement
+    Safe Harbor agreement adopted via: just create-agreement
 
 Usage:
     just request-attack-mode
@@ -14,23 +14,30 @@ After running, wait for DAO approval. Check state with:
 """
 
 import json
-import os
 
 import boa
 
-from script.abis import BC_ATTACK_REGISTRY, ATTACK_REGISTRY_ABI
+import battlechain as bc
+from battlechain.abi import REGISTRY_ABI
+
+
+def _adopter_agreement(adopter: str) -> str:
+    registry = boa.loads_abi(json.dumps(REGISTRY_ABI), name="BCSafeHarborRegistry").at(
+        bc.TESTNET_REGISTRY
+    )
+    address = registry.getAgreement(adopter)
+    if int(address, 16) == 0:
+        raise RuntimeError(
+            f"No Safe Harbor agreement adopted by {adopter}. Run `just create-agreement` first."
+        )
+    return address
 
 
 def moccasin_main() -> None:
-    agreement_address = os.environ.get("AGREEMENT_ADDRESS")
-    if not agreement_address:
-        raise ValueError("AGREEMENT_ADDRESS not set in .env")
+    signer = boa.env.eoa
+    agreement_address = _adopter_agreement(signer)
 
-    attack_registry = boa.loads_abi(
-        json.dumps(ATTACK_REGISTRY_ABI), name="AttackRegistry"
-    ).at(BC_ATTACK_REGISTRY)
-
-    attack_registry.requestUnderAttack(agreement_address)
+    bc.request_attack_mode(agreement_address)
 
     print(f"Attack mode requested for agreement: {agreement_address}")
     print("State is now ATTACK_REQUESTED (2) — awaiting DAO approval.")

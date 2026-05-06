@@ -51,14 +51,14 @@ def mint(to: address, amount: uint256):
     """@notice Anyone can mint. Intentional for the tutorial."""
     self.totalSupply      += amount
     self.balanceOf[to]    += amount
-    log Transfer(empty(address), to, amount)
+    log Transfer(sender=empty(address), receiver=to, value=amount)
 
 
 @external
 def setTransferHook(hook: address):
     """@notice Register a hook contract called when you receive tokens."""
     self.transferHooks[msg.sender] = hook
-    log TransferHookSet(msg.sender, hook)
+    log TransferHookSet(user=msg.sender, hook=hook)
 
 
 @external
@@ -80,7 +80,7 @@ def transferFrom(owner: address, to: address, amount: uint256) -> bool:
 @external
 def approve(spender: address, amount: uint256) -> bool:
     self.allowance[msg.sender][spender] = amount
-    log Approval(msg.sender, spender, amount)
+    log Approval(owner=msg.sender, spender=spender, value=amount)
     return True
 
 
@@ -88,4 +88,4 @@ def approve(spender: address, amount: uint256) -> bool:
 def _transfer(sender: address, to: address, amount: uint256):
     self.balanceOf[sender] -= amount
     self.balanceOf[to]     += amount
-    log Transfer(sender, to, amount)
+    log Transfer(sender=sender, receiver=to, value=amount)

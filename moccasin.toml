@@ -3,7 +3,7 @@ src = "src"
 script = "script"
 
 [networks.battlechain]
-url = "https://testnet.battlechain.com:3051"
+url = "https://testnet.battlechain.com"
 chain_id = 627
 default_account_name = "deployer"
 explorer_uri = "https://block-explorer-api.testnet.battlechain.com/api"

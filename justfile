@@ -8,12 +8,12 @@ import-key:
 build:
     mox compile
 
-# Step 1: Deploy MockToken + VulnerableVault, seed the vault
-# Copy TOKEN_ADDRESS and VAULT_ADDRESS from output into .env
+# Step 1: Deploy MockToken + VulnerableVault, seed the vault.
+# Addresses are saved to moccasin's deployments.db automatically.
 setup:
     mox run script/setup.py --network battlechain
 
-# Step 2: Create Safe Harbor agreement (requires VAULT_ADDRESS in .env)
+# Step 2: Create Safe Harbor agreement (reads VulnerableVault from deployments.db)
 # Copy AGREEMENT_ADDRESS from output into .env
 create-agreement:
     mox run script/create_agreement.py --network battlechain
@@ -22,11 +22,10 @@ create-agreement:
 request-attack-mode:
     mox run script/request_attack_mode.py --network battlechain
 
-# Step 4: Execute the attack (requires DAO approval first)
+# Step 4: Execute the attack (requires DAO approval first; reads contracts from deployments.db)
 attack:
     mox run script/attack.py --network battlechain
 
 # Check agreement state (2=ATTACK_REQUESTED, 3=UNDER_ATTACK)
 check-state:
-    cast call $ATTACK_REGISTRY "getAgreementState(address)(uint8)" $AGREEMENT_ADDRESS \
-        --rpc-url https://testnet.battlechain.com:3051
+    mox run script/check_state.py --network battlechain

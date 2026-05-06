@@ -3,9 +3,12 @@
 __pycache__/
 *.pyc
 out/
+.deployments.db
+.bc_deployments.json
 
 # Dotenv
 .env
 
 # macOS
 .DS_Store
+.claude/
