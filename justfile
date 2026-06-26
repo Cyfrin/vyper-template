@@ -18,11 +18,16 @@ setup:
 create-agreement:
     mox run script/create_agreement.py --network battlechain
 
-# Step 3: Request attack mode (requires AGREEMENT_ADDRESS in .env)
+# Step 3: Request attack mode (transitions agreement to ATTACK_REQUESTED)
 request-attack-mode:
     mox run script/request_attack_mode.py --network battlechain
 
-# Step 4: Execute the attack (requires DAO approval first; reads contracts from deployments.db)
+# Step 3.5: Self-approve via the permissionless testnet MockRegistryModerator
+# (transitions to UNDER_ATTACK). Testnet only; mainnet approval is real DAO governance.
+approve-attack:
+    mox run script/approve_attack.py --network battlechain
+
+# Step 4: Execute the attack (requires the agreement to be UNDER_ATTACK; reads contracts from deployments.db)
 attack:
     mox run script/attack.py --network battlechain
 
